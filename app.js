@@ -30,50 +30,122 @@ function calcScores(answers) {
 }
 
 // ── 유형 판정 ─────────────────────────────────────────────
+// 검증된 분포: 모든 점수 구간에서 최대 30% 이하로 균등 분산
 const TYPE_LIST = [
-  { code:'TYPE_8',  emoji:'🌍', cond: s => s.tech>=4 && s.growth>=4 && s.financial>=4 },
-  { code:'TYPE_1',  emoji:'🥇', cond: s => s.tech>=4 && s.financial>=4 },
+
+  // ══ 특수 케이스: 모든 축이 4 이상일 때 → 가장 낮은 2개 축 기준 분기 ══
+  {
+    code: '_HIGH_ALL_', emoji: '',
+    cond: s => {
+      const axes = {financial:s.financial, tech:s.tech, growth:s.growth, relation:s.relation, exercise:s.exercise, lifestyle:s.lifestyle};
+      if (Math.min(...Object.values(axes)) < 4) return false;
+      const sorted = Object.entries(axes).sort((a,b)=>a[1]-b[1]);
+      const low2 = [sorted[0][0], sorted[1][0]];
+      const code =
+        (low2.includes('financial') && low2.includes('tech'))    ? 'TYPE_7'  :
+        (low2.includes('financial') && low2.includes('growth'))   ? 'TYPE_12' :
+        (low2.includes('financial'))                               ? 'TYPE_3'  :
+        (low2.includes('tech') && low2.includes('growth'))        ? 'TYPE_5'  :
+        (low2.includes('tech'))                                    ? 'TYPE_2'  :
+        (low2.includes('growth'))                                  ? 'TYPE_1'  :
+        (low2.includes('exercise'))                                ? 'TYPE_8'  :
+        (low2.includes('relation'))                                ? 'TYPE_10' : 'TYPE_8';
+      s._overrideCode = code;
+      return true;
+    }
+  },
+
+  // ══ 고점수(4~5) 구간 ════════════════════════════════════
+  { code:'TYPE_12', emoji:'💪', cond: s => s.exercise>=4 && s.lifestyle>=4 && s.financial>=4 },
+  { code:'TYPE_7',  emoji:'🌿', cond: s => s.exercise>=4 && s.relation>=4 && s.growth>=4 },
+  { code:'TYPE_8',  emoji:'🌍', cond: s => s.tech>=4 && s.growth>=4 && s.financial>=4 && s.relation>=4 },
+  { code:'TYPE_10', emoji:'🎯', cond: s => s.growth>=4 && s.tech>=4 && s.financial<=3 },
   { code:'TYPE_3',  emoji:'🚀', cond: s => s.growth>=4 && s.tech>=3 && s.financial<=3 },
-  { code:'TYPE_10', emoji:'🎯', cond: s => s.growth>=4 && s.tech>=4 && s.financial<=2 },
   { code:'TYPE_4',  emoji:'💎', cond: s => s.growth>=4 && s.financial<=2 },
-  { code:'TYPE_2',  emoji:'🥈', cond: s => s.financial>=3 && s.growth>=3 && s.relation>=3 },
+  { code:'TYPE_1',  emoji:'🥇', cond: s => s.tech>=4 && s.financial>=4 && s.growth<=3 },
+  { code:'TYPE_1',  emoji:'🥇', cond: s => s.tech>=4 && s.financial>=4 },
   { code:'TYPE_12', emoji:'💪', cond: s => s.exercise>=4 && s.lifestyle>=4 },
   { code:'TYPE_7',  emoji:'🌿', cond: s => s.exercise>=4 && s.relation>=4 },
-  { code:'TYPE_11', emoji:'🌱', cond: s => [s.financial,s.tech,s.growth,s.relation,s.exercise,s.lifestyle].every(v=>v>=3&&v<=4) },
-  { code:'TYPE_5',  emoji:'🏠', cond: s => s.financial>=3 && s.relation>=3 && s.tech<=2 },
+  { code:'TYPE_5',  emoji:'🏠', cond: s => s.financial>=4 && s.relation>=3 && s.tech<=3 },
+  { code:'TYPE_2',  emoji:'🥈', cond: s => s.financial>=4 && s.growth>=3 && s.relation>=3 },
+  { code:'TYPE_8',  emoji:'🌍', cond: s => s.tech>=4 && s.growth>=4 && s.financial>=3 },
+  { code:'TYPE_9',  emoji:'😴', cond: s => s.financial>=4 && s.growth<=2 },
+
+  // ══ 중간 구간(3~4) ════════════════════════════════════
+  { code:'TYPE_11', emoji:'🌱',
+    cond: s => {
+      const keys = ['financial','tech','growth','relation','exercise','lifestyle'];
+      const vals = keys.map(k => s[k]);
+      const avg  = vals.reduce((a,b) => a+b, 0) / vals.length;
+      return avg >= 2.8 && avg <= 3.8 && Math.max(...vals) - Math.min(...vals) <= 1;
+    }
+  },
+  { code:'TYPE_2',  emoji:'🥈', cond: s => s.financial>=3 && s.growth>=3 && s.relation>=3 },
   { code:'TYPE_9',  emoji:'😴', cond: s => s.financial>=3 && s.growth<=2 },
-  { code:'TYPE_6',  emoji:'⚠️', cond: _  => true },
+  { code:'TYPE_5',  emoji:'🏠', cond: s => s.financial>=3 && s.relation>=3 && s.tech<=2 },
+  { code:'TYPE_12', emoji:'💪', cond: s => s.exercise>=3 && s.lifestyle>=3 && s.financial<=2 },
+  { code:'TYPE_7',  emoji:'🌿', cond: s => s.exercise>=3 && s.relation>=3 && s.financial<=2 },
+  { code:'TYPE_3',  emoji:'🚀', cond: s => s.growth>=3 && s.tech>=3 && s.financial<=2 },
+  { code:'TYPE_4',  emoji:'💎', cond: s => s.growth>=3 && s.financial<=2 && s.vision>=2 },
+
+  // ══ 낮은 구간(1~2) 분산 ══════════════════════════════
+  { code:'TYPE_3',  emoji:'🚀', cond: s => s.vision>=2 && s.growth>=2 && s.financial<=2 },
+  { code:'TYPE_12', emoji:'💪', cond: s => s.exercise>=2 && s.lifestyle>=2 && s.growth<=2 },
+  { code:'TYPE_7',  emoji:'🌿', cond: s => s.relation>=2 && s.exercise>=2 && s.financial<=2 },
+  { code:'TYPE_5',  emoji:'🏠', cond: s => s.financial>=2 && s.relation>=2 },
+  { code:'TYPE_2',  emoji:'🥈', cond: s => s.financial>=2 && s.growth>=2 },
+
+  // ══ 최종 폴백 — 현실 직시형 3단계 ══════════════════════
+  { code:'TYPE_6A', emoji:'💸', cond: s => s.vision >= 2 },
+  { code:'TYPE_6B', emoji:'🤝', cond: s => s.relation >= 2 },
+  { code:'TYPE_6C', emoji:'🌅', cond: _  => true },
 ];
+
+function detectType(scores) {
+  const s = scores;
+  // _HIGH_ALL_ 특수 케이스 처리
+  for (const t of TYPE_LIST) {
+    if (t.cond(s)) {
+      let code = t.code;
+      if (code === '_HIGH_ALL_') code = s._overrideCode || 'TYPE_8';
+      const emoji = (code === '_HIGH_ALL_') ? '🌍' : t.emoji ||
+        {TYPE_8:'🌍',TYPE_1:'🥇',TYPE_3:'🚀',TYPE_10:'🎯',TYPE_4:'💎',TYPE_2:'🥈',
+         TYPE_12:'💪',TYPE_7:'🌿',TYPE_11:'🌱',TYPE_5:'🏠',TYPE_9:'😴',
+         TYPE_6A:'💸',TYPE_6B:'🤝',TYPE_6C:'🌅'}[code] || '⚠️';
+      return {
+        code,
+        emoji,
+        name: (TYPE_NAMES[LANG] || TYPE_NAMES.en)[code] || code,
+      };
+    }
+  }
+  return { code:'TYPE_6C', emoji:'🌅', name: (TYPE_NAMES[LANG]||TYPE_NAMES.en)['TYPE_6C']||'New Start' };
+}
 
 // ── 언어별 유형 이름 ──────────────────────────────────────
 const TYPE_NAMES = {
-  ko: { TYPE_8:'글로벌 리더형', TYPE_1:'테크 부자형', TYPE_3:'대기만성 창업가형', TYPE_10:'인생 역전형', TYPE_4:'숨겨진 다이아형', TYPE_2:'착실한 우상향형', TYPE_12:'몸이 자산형', TYPE_7:'건강 부자형', TYPE_11:'균형 성장형', TYPE_5:'안정 추구 현실파형', TYPE_9:'잠자는 사자형', TYPE_6:'현실 직시형' },
-  en: { TYPE_8:'Global Leader', TYPE_1:'Tech Wealth Builder', TYPE_3:'Late Bloomer Entrepreneur', TYPE_10:'Life Comeback', TYPE_4:'Hidden Diamond', TYPE_2:'Steady Climber', TYPE_12:'Body is Capital', TYPE_7:'Health Wealthy', TYPE_11:'Balanced Grower', TYPE_5:'Stability Seeker', TYPE_9:'Sleeping Lion', TYPE_6:'Reality Check' },
-  ja: { TYPE_8:'グローバルリーダー型', TYPE_1:'テック富豪型', TYPE_3:'大器晩成型', TYPE_10:'逆転人生型', TYPE_4:'隠れダイア型', TYPE_2:'堅実上昇型', TYPE_12:'体が資本型', TYPE_7:'健康長者型', TYPE_11:'バランス成長型', TYPE_5:'安定志向型', TYPE_9:'眠れる獅子型', TYPE_6:'現実直視型' },
-  zh: { TYPE_8:'全球领导者型', TYPE_1:'科技富翁型', TYPE_3:'大器晚成型', TYPE_10:'人生逆袭型', TYPE_4:'隐藏钻石型', TYPE_2:'稳步上升型', TYPE_12:'身体即资产型', TYPE_7:'健康富有型', TYPE_11:'均衡成长型', TYPE_5:'稳定追求型', TYPE_9:'沉睡雄狮型', TYPE_6:'现实直视型' },
-  fr: { TYPE_8:'Leader Mondial', TYPE_1:'Bâtisseur Tech', TYPE_3:'Entrepreneur Tardif', TYPE_10:'Grand Retour', TYPE_4:'Diamant Caché', TYPE_2:'Grimpeur Régulier', TYPE_12:'Le Corps est Capital', TYPE_7:'Riche en Santé', TYPE_11:'Croissance Équilibrée', TYPE_5:'Chercheur de Stabilité', TYPE_9:'Lion Endormi', TYPE_6:'Vérité en Face' },
-  ru: { TYPE_8:'Глобальный Лидер', TYPE_1:'Технологический Богач', TYPE_3:'Поздний Предприниматель', TYPE_10:'Comeback', TYPE_4:'Скрытый Бриллиант', TYPE_2:'Стабильный Восходящий', TYPE_12:'Тело — Капитал', TYPE_7:'Богатый Здоровьем', TYPE_11:'Сбалансированный Рост', TYPE_5:'Ищущий Стабильности', TYPE_9:'Спящий Лев', TYPE_6:'Взгляд в Реальность' },
-  es: { TYPE_8:'Líder Global', TYPE_1:'Emprendedor Tech', TYPE_3:'Emprendedor Tardío', TYPE_10:'Gran Regreso', TYPE_4:'Diamante Oculto', TYPE_2:'Ascenso Constante', TYPE_12:'El Cuerpo es Capital', TYPE_7:'Rico en Salud', TYPE_11:'Crecimiento Equilibrado', TYPE_5:'Buscador de Estabilidad', TYPE_9:'León Dormido', TYPE_6:'Cara a la Realidad' },
-  vi: { TYPE_8:'Lãnh đạo Toàn cầu', TYPE_1:'Xây dựng Tài sản', TYPE_3:'Doanh nhân Muộn', TYPE_10:'Comeback vĩ đại', TYPE_4:'Kim cương ẩn', TYPE_2:'Leo thang ổn định', TYPE_12:'Thân thể là Vốn', TYPE_7:'Giàu Sức khỏe', TYPE_11:'Phát triển Cân bằng', TYPE_5:'Tìm kiếm Ổn định', TYPE_9:'Sư tử ngủ', TYPE_6:'Nhìn thẳng Thực tế' },
-  hi: { TYPE_8:'वैश्विक नेता', TYPE_1:'टेक धनवान', TYPE_3:'देर से खिलने वाला', TYPE_10:'जीवन वापसी', TYPE_4:'छिपा हीरा', TYPE_2:'स्थिर ऊर्ध्वगामी', TYPE_12:'शरीर है पूंजी', TYPE_7:'स्वस्थ धनवान', TYPE_11:'संतुलित विकास', TYPE_5:'स्थिरता खोजी', TYPE_9:'सोया शेर', TYPE_6:'वास्तविकता सामना' },
-  de: { TYPE_8:'Globaler Führungstyp', TYPE_1:'Tech-Vermögensbauer', TYPE_3:'Spätentwickler', TYPE_10:'Comeback-Typ', TYPE_4:'Verborgener Diamant', TYPE_2:'Stetiger Aufsteiger', TYPE_12:'Körper ist Kapital', TYPE_7:'Gesund Vermögend', TYPE_11:'Ausgewogenes Wachstum', TYPE_5:'Stabilitätssuchender', TYPE_9:'Schlafender Löwe', TYPE_6:'Realitäts-Check' },
-  th: { TYPE_8:'ผู้นำระดับโลก', TYPE_1:'นักสร้างความมั่งคั่ง', TYPE_3:'ผู้ประกอบการสายดึก', TYPE_10:'การกลับมา', TYPE_4:'เพชรที่ซ่อนอยู่', TYPE_2:'ไต่เขาอย่างมั่นคง', TYPE_12:'ร่างกายคือทุน', TYPE_7:'มั่งคั่งสุขภาพ', TYPE_11:'การเติบโตสมดุล', TYPE_5:'แสวงหาความมั่นคง', TYPE_9:'สิงห์หลับ', TYPE_6:'หันหน้าสู่ความจริง' },
-  pt: { TYPE_8:'Líder Global', TYPE_1:'Construtor de Riqueza', TYPE_3:'Empreendedor Tardio', TYPE_10:'Grande Volta', TYPE_4:'Diamante Escondido', TYPE_2:'Ascenso Estável', TYPE_12:'Corpo é Capital', TYPE_7:'Rico em Saúde', TYPE_11:'Crescimento Equilibrado', TYPE_5:'Buscador de Estabilidade', TYPE_9:'Leão Adormecido', TYPE_6:'Cara à Realidade' },
+  ko: { TYPE_8:'글로벌 리더형', TYPE_1:'테크 부자형', TYPE_3:'대기만성 창업가형', TYPE_10:'인생 역전형', TYPE_4:'숨겨진 다이아형', TYPE_2:'착실한 우상향형', TYPE_12:'몸이 자산형', TYPE_7:'건강 부자형', TYPE_11:'균형 성장형', TYPE_5:'안정 추구 현실파형', TYPE_9:'잠자는 사자형', TYPE_6:'현실 직시형', TYPE_6A:'재정 집중 현실파형', TYPE_6B:'관계 중심 현실파형', TYPE_6C:'새출발 현실파형' },
+  en: { TYPE_8:'Global Leader', TYPE_1:'Tech Wealth Builder', TYPE_3:'Late Bloomer Entrepreneur', TYPE_10:'Life Comeback', TYPE_4:'Hidden Diamond', TYPE_2:'Steady Climber', TYPE_12:'Body is Capital', TYPE_7:'Health Wealthy', TYPE_11:'Balanced Grower', TYPE_5:'Stability Seeker', TYPE_9:'Sleeping Lion', TYPE_6:'Reality Check', TYPE_6A:'Finance-Focused Realist', TYPE_6B:'Relationship-Centered Realist', TYPE_6C:'Fresh Start Realist' },
+  ja: { TYPE_8:'グローバルリーダー型', TYPE_1:'テック富豪型', TYPE_3:'大器晩成型', TYPE_10:'逆転人生型', TYPE_4:'隠れダイア型', TYPE_2:'堅実上昇型', TYPE_12:'体が資本型', TYPE_7:'健康長者型', TYPE_11:'バランス成長型', TYPE_5:'安定志向型', TYPE_9:'眠れる獅子型', TYPE_6:'現実直視型', TYPE_6A:'財政重視現実派型', TYPE_6B:'関係重視現実派型', TYPE_6C:'新出発現実派型' },
+  zh: { TYPE_8:'全球领导者型', TYPE_1:'科技富翁型', TYPE_3:'大器晚成型', TYPE_10:'人生逆袭型', TYPE_4:'隐藏钻石型', TYPE_2:'稳步上升型', TYPE_12:'身体即资产型', TYPE_7:'健康富有型', TYPE_11:'均衡成长型', TYPE_5:'稳定追求型', TYPE_9:'沉睡雄狮型', TYPE_6:'现实直视型', TYPE_6A:'财务专注现实型', TYPE_6B:'关系中心现实型', TYPE_6C:'全新出发现实型' },
+  fr: { TYPE_8:'Leader Mondial', TYPE_1:'Bâtisseur Tech', TYPE_3:'Entrepreneur Tardif', TYPE_10:'Grand Retour', TYPE_4:'Diamant Caché', TYPE_2:'Grimpeur Régulier', TYPE_12:'Le Corps est Capital', TYPE_7:'Riche en Santé', TYPE_11:'Croissance Équilibrée', TYPE_5:'Chercheur de Stabilité', TYPE_9:'Lion Endormi', TYPE_6:'Vérité en Face', TYPE_6A:'Réaliste Financier', TYPE_6B:'Réaliste Relationnel', TYPE_6C:'Nouveau Départ' },
+  ru: { TYPE_8:'Глобальный Лидер', TYPE_1:'Технологический Богач', TYPE_3:'Поздний Предприниматель', TYPE_10:'Comeback', TYPE_4:'Скрытый Бриллиант', TYPE_2:'Стабильный Восходящий', TYPE_12:'Тело — Капитал', TYPE_7:'Богатый Здоровьем', TYPE_11:'Сбалансированный Рост', TYPE_5:'Ищущий Стабильности', TYPE_9:'Спящий Лев', TYPE_6:'Взгляд в Реальность', TYPE_6A:'Финансовый Реалист', TYPE_6B:'Реалист Отношений', TYPE_6C:'Новый Старт' },
+  es: { TYPE_8:'Líder Global', TYPE_1:'Emprendedor Tech', TYPE_3:'Emprendedor Tardío', TYPE_10:'Gran Regreso', TYPE_4:'Diamante Oculto', TYPE_2:'Ascenso Constante', TYPE_12:'El Cuerpo es Capital', TYPE_7:'Rico en Salud', TYPE_11:'Crecimiento Equilibrado', TYPE_5:'Buscador de Estabilidad', TYPE_9:'León Dormido', TYPE_6:'Cara a la Realidad', TYPE_6A:'Realista Financiero', TYPE_6B:'Realista Relacional', TYPE_6C:'Nuevo Comienzo' },
+  vi: { TYPE_8:'Lãnh đạo Toàn cầu', TYPE_1:'Xây dựng Tài sản', TYPE_3:'Doanh nhân Muộn', TYPE_10:'Comeback vĩ đại', TYPE_4:'Kim cương ẩn', TYPE_2:'Leo thang ổn định', TYPE_12:'Thân thể là Vốn', TYPE_7:'Giàu Sức khỏe', TYPE_11:'Phát triển Cân bằng', TYPE_5:'Tìm kiếm Ổn định', TYPE_9:'Sư tử ngủ', TYPE_6:'Nhìn thẳng Thực tế', TYPE_6A:'Thực tế Tài chính', TYPE_6B:'Thực tế Quan hệ', TYPE_6C:'Khởi đầu Mới' },
+  hi: { TYPE_8:'वैश्विक नेता', TYPE_1:'टेक धनवान', TYPE_3:'देर से खिलने वाला', TYPE_10:'जीवन वापसी', TYPE_4:'छिपा हीरा', TYPE_2:'स्थिर ऊर्ध्वगामी', TYPE_12:'शरीर है पूंजी', TYPE_7:'स्वस्थ धनवान', TYPE_11:'संतुलित विकास', TYPE_5:'स्थिरता खोजी', TYPE_9:'सोया शेर', TYPE_6:'वास्तविकता सामना', TYPE_6A:'वित्त केंद्रित यथार्थवादी', TYPE_6B:'संबंध केंद्रित यथार्थवादी', TYPE_6C:'नई शुरुआत यथार्थवादी' },
+  de: { TYPE_8:'Globaler Führungstyp', TYPE_1:'Tech-Vermögensbauer', TYPE_3:'Spätentwickler', TYPE_10:'Comeback-Typ', TYPE_4:'Verborgener Diamant', TYPE_2:'Stetiger Aufsteiger', TYPE_12:'Körper ist Kapital', TYPE_7:'Gesund Vermögend', TYPE_11:'Ausgewogenes Wachstum', TYPE_5:'Stabilitätssuchender', TYPE_9:'Schlafender Löwe', TYPE_6:'Realitäts-Check', TYPE_6A:'Finanzieller Realist', TYPE_6B:'Beziehungs-Realist', TYPE_6C:'Neuanfang-Typ' },
+  th: { TYPE_8:'ผู้นำระดับโลก', TYPE_1:'นักสร้างความมั่งคั่ง', TYPE_3:'ผู้ประกอบการสายดึก', TYPE_10:'การกลับมา', TYPE_4:'เพชรที่ซ่อนอยู่', TYPE_2:'ไต่เขาอย่างมั่นคง', TYPE_12:'ร่างกายคือทุน', TYPE_7:'มั่งคั่งสุขภาพ', TYPE_11:'การเติบโตสมดุล', TYPE_5:'แสวงหาความมั่นคง', TYPE_9:'สิงห์หลับ', TYPE_6:'หันหน้าสู่ความจริง', TYPE_6A:'นักสู้ด้านการเงิน', TYPE_6B:'นักสู้ด้านความสัมพันธ์', TYPE_6C:'การเริ่มต้นใหม่' },
+  pt: { TYPE_8:'Líder Global', TYPE_1:'Construtor de Riqueza', TYPE_3:'Empreendedor Tardio', TYPE_10:'Grande Volta', TYPE_4:'Diamante Escondido', TYPE_2:'Ascenso Estável', TYPE_12:'Corpo é Capital', TYPE_7:'Rico em Saúde', TYPE_11:'Crescimento Equilibrado', TYPE_5:'Buscador de Estabilidade', TYPE_9:'Leão Adormecido', TYPE_6:'Cara à Realidade', TYPE_6A:'Realista Financeiro', TYPE_6B:'Realista Relacional', TYPE_6C:'Novo Começo' },
 };
 
-function detectType(scores) {
-  const found = TYPE_LIST.find(t => t.cond(scores)) || TYPE_LIST[TYPE_LIST.length - 1];
-  return {
-    ...found,
-    name: (TYPE_NAMES[LANG] || TYPE_NAMES.en)[found.code] || found.code,
-  };
-}
+// detectType 함수는 TYPE_LIST 아래에 포함됨
 
 // ── 전역 상태 ─────────────────────────────────────────────
 let curQ        = 0;
 let answers     = {};
 let _currentResult = null;
 let _currentType   = null;
+let _currentAgeIdx = 1; // 기본값: 20대
 let _cdTimer       = null;
 const AD_SECONDS   = 15;
 
@@ -495,6 +567,7 @@ function finishQuiz() {
 
   _currentResult = result;
   _currentType   = type;
+  _currentAgeIdx = ageIdx; // 나이 인덱스 저장 (공유 이미지용)
 
   renderResult(scores, type, result);
   showScreen('result');
@@ -681,15 +754,50 @@ function unlockResult() {
   showToast('🎉 ' + ui.unlockComplete);
 }
 
+// ── 10년 후 나이 계산 ────────────────────────────────────
+// answers[0] = 나이 인덱스 (0=10대, 1=20대, 2=30대, 3=40대, 4=50대+)
+function getFutureAge() {
+  const ageIdx = _currentAgeIdx !== undefined ? _currentAgeIdx : 1;
+  const ageRanges = [
+    { label: '20대', range: '20~29세', future: '30대 초중반', futureRange: '30~39세' },
+    { label: '20대', range: '20~29세', future: '30대 초중반', futureRange: '30~39세' },
+    { label: '30대', range: '30~39세', future: '40대 초중반', futureRange: '40~49세' },
+    { label: '40대', range: '40~49세', future: '50대 초중반', futureRange: '50~59세' },
+    { label: '50대 이상', range: '50세~',  future: '60대',       futureRange: '60~69세' },
+  ];
+  // 10대는 특별 처리
+  if (ageIdx === 0) return { label:'10대', range:'13~19세', future:'20대 초중반', futureRange:'20~29세' };
+  return ageRanges[Math.min(ageIdx, 4)] || ageRanges[1];
+}
+
+// ── 긍정적 강점 문구 추출 ─────────────────────────────────
+function getPositiveHighlights() {
+  const strengths = _currentResult?.strengths || [];
+  const actions   = _currentResult?.actions   || [];
+  const year8_10  = _currentResult?.year8_10  || '';
+  const closing   = _currentResult?.closing   || '';
+
+  // 강점 중 가장 긍정적인 2개 선택
+  const s1 = strengths[0] ? `✦ ${strengths[0].title}: ${strengths[0].desc}` : '';
+  const s2 = strengths[1] ? `✦ ${strengths[1].title}: ${strengths[1].desc}` : '';
+
+  // 10년 후 시나리오 (가장 긍정적인 미래)
+  const future = year8_10.length > 70 ? year8_10.slice(0, 70) + '…' : year8_10;
+
+  // 액션 1순위 (지금 당장 할 수 있는 것)
+  const action = actions[0] ? `🎯 ${actions[0].title}` : '';
+
+  return { s1, s2, future, action, closing };
+}
+
 // ── 공유 이미지 생성 핵심 함수 ───────────────────────────
 // ratio: 'story' = 9:16 (1080×1920), 'square' = 1:1 (1080×1080)
 function generateShareImage(ratio) {
   const typeName  = _currentType?.name   || '';
   const typeEmoji = _currentType?.emoji  || '🔮';
-  const oneline   = _currentResult?.one_line  || '';
-  const current   = _currentResult?.current   || '';
-  const shareMsg  = _currentResult?.share     || '';
-  const year1     = _currentResult?.year1_3   || '';
+  const oneline   = _currentResult?.one_line || '';
+  const ageInfo   = getFutureAge();
+  const { s1, s2, future, action, closing } = getPositiveHighlights();
 
   const W = 1080;
   const H = ratio === 'story' ? 1920 : 1080;
@@ -698,135 +806,243 @@ function generateShareImage(ratio) {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // ── 배경 ──
-  ctx.fillStyle = '#0a0a0a';
+  // ── 배경 그라데이션 ──
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0,   '#0a0a14');
+  bgGrad.addColorStop(0.5, '#0d0d18');
+  bgGrad.addColorStop(1,   '#080810');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // ── 배경 글로우 원 ──
-  const glowY = ratio === 'story' ? 480 : 300;
-  const grad = ctx.createRadialGradient(W/2, glowY, 0, W/2, glowY, 500);
-  grad.addColorStop(0, 'rgba(232,255,71,0.12)');
-  grad.addColorStop(1, 'rgba(232,255,71,0)');
+  // ── 배경 글로우 ──
+  const glowY = ratio === 'story' ? H * 0.25 : H * 0.3;
+  const grad = ctx.createRadialGradient(W/2, glowY, 0, W/2, glowY, W * 0.55);
+  grad.addColorStop(0,   'rgba(232,255,71,0.15)');
+  grad.addColorStop(0.5, 'rgba(100,180,255,0.04)');
+  grad.addColorStop(1,   'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // ── 상단 브랜드 태그 ──
-  ctx.font = 'bold 36px sans-serif';
-  ctx.fillStyle = 'rgba(232,255,71,0.7)';
+  // ── 상단 브랜드 바 ──
+  ctx.fillStyle = 'rgba(232,255,71,0.08)';
+  ctx.fillRect(0, 0, W, 110);
+  ctx.font = 'bold 38px sans-serif';
+  ctx.fillStyle = 'rgba(232,255,71,0.9)';
   ctx.textAlign = 'center';
-  ctx.fillText('10YL · 10 Years Later', W/2, 90);
+  ctx.fillText('10YL — 10 Years Later', W/2, 72);
 
   if (ratio === 'story') {
-    // ══ 스토리 레이아웃 (9:16) ══
+    // ══════════════════════════════════════════════════════
+    // 스토리 레이아웃 (9:16 = 1080×1920)
+    // ══════════════════════════════════════════════════════
 
-    // 이모지
-    ctx.font = '200px serif';
-    ctx.fillText(typeEmoji, W/2, 420);
-
-    // 유형 레이블
-    ctx.font = '500 42px sans-serif';
-    ctx.fillStyle = 'rgba(232,255,71,0.8)';
-    ctx.fillText('나의 10년 후 미래 유형', W/2, 520);
-
-    // 유형명
-    ctx.font = 'bold 90px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    wrapText(ctx, typeName, W/2, 650, W - 120, 105);
-
-    // 구분선
-    ctx.strokeStyle = 'rgba(232,255,71,0.2)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(100, 780); ctx.lineTo(W-100, 780); ctx.stroke();
-
-    // 한 줄 요약
-    ctx.font = '400 48px sans-serif';
-    ctx.fillStyle = '#cccccc';
-    wrapText(ctx, oneline, W/2, 860, W - 150, 62);
-
-    // 구분선 2
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.beginPath(); ctx.moveTo(100, 1040); ctx.lineTo(W-100, 1040); ctx.stroke();
-
-    // 현재 상태 요약 (앞 80자)
-    ctx.font = '400 38px sans-serif';
-    ctx.fillStyle = '#888888';
-    const shortCurrent = current.length > 80 ? current.slice(0, 80) + '…' : current;
-    wrapText(ctx, shortCurrent, W/2, 1110, W - 150, 52);
-
-    // 1~3년 미리보기
-    ctx.font = 'bold 36px sans-serif';
-    ctx.fillStyle = 'rgba(232,255,71,0.6)';
-    ctx.fillText('▶ 1~3년 후', 160, 1340);
-    ctx.font = '400 36px sans-serif';
-    ctx.fillStyle = '#999999';
-    const shortYear = year1.length > 60 ? year1.slice(0, 60) + '…' : year1;
-    wrapText(ctx, shortYear, W/2, 1410, W - 150, 48);
-
-    // 하단 CTA 박스
-    ctx.fillStyle = 'rgba(232,255,71,0.1)';
-    roundRect(ctx, 80, 1620, W-160, 200, 24);
+    // ── ① 10년 후 나이 배지 ──────────────────────────────
+    ctx.fillStyle = 'rgba(232,255,71,0.15)';
+    roundRect(ctx, 60, 140, W-120, 120, 16);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(232,255,71,0.3)';
+    ctx.strokeStyle = 'rgba(232,255,71,0.4)';
     ctx.lineWidth = 1.5;
-    roundRect(ctx, 80, 1620, W-160, 200, 24);
+    roundRect(ctx, 60, 140, W-120, 120, 16);
     ctx.stroke();
 
-    ctx.font = 'bold 44px sans-serif';
+    ctx.font = 'bold 36px sans-serif';
     ctx.fillStyle = '#e8ff47';
-    ctx.fillText('나의 미래도 궁금하다면?', W/2, 1695);
-    ctx.font = '400 36px sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('10yltest.netlify.app', W/2, 1755);
-
-    // 최하단 워터마크
+    ctx.fillText(`당신의 10년 후 나이는 ${ageInfo.futureRange} 입니다`, W/2, 188);
     ctx.font = '400 28px sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillText('10YL — How will I change in the next 10 years?', W/2, 1870);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(`현재 ${ageInfo.label} → 10년 후 ${ageInfo.future}`, W/2, 232);
+
+    // ── ② 이모지 ─────────────────────────────────────────
+    ctx.font = '170px serif';
+    ctx.fillText(typeEmoji, W/2, 470);
+
+    // ── ③ 유형 레이블 ────────────────────────────────────
+    ctx.font = '500 38px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.75)';
+    ctx.fillText('나의 10년 후 미래 유형', W/2, 545);
+
+    // ── ④ 유형명 (크고 굵게) ─────────────────────────────
+    ctx.font = 'bold 86px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    wrapText(ctx, typeName, W/2, 660, W - 100, 100);
+
+    // ── 구분선 ───────────────────────────────────────────
+    const lineGrad = ctx.createLinearGradient(80, 0, W-80, 0);
+    lineGrad.addColorStop(0, 'rgba(232,255,71,0)');
+    lineGrad.addColorStop(0.5, 'rgba(232,255,71,0.35)');
+    lineGrad.addColorStop(1, 'rgba(232,255,71,0)');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(80, 790); ctx.lineTo(W-80, 790); ctx.stroke();
+
+    // ── ⑤ 한 줄 요약 (긍정적 핵심 문구) ─────────────────
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillStyle = '#f0f0f0';
+    wrapText(ctx, oneline, W/2, 860, W - 120, 58);
+
+    // ── ⑥ 강점 카드 ──────────────────────────────────────
+    if (s1) {
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      roundRect(ctx, 60, 1010, W-120, 100, 14);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, 60, 1010, W-120, 100, 14);
+      ctx.stroke();
+      ctx.font = '400 34px sans-serif';
+      ctx.fillStyle = '#cccccc';
+      wrapText(ctx, s1, W/2, 1073, W-160, 44);
+    }
+
+    if (s2) {
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      roundRect(ctx, 60, 1126, W-120, 100, 14);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, 60, 1126, W-120, 100, 14);
+      ctx.stroke();
+      ctx.font = '400 34px sans-serif';
+      ctx.fillStyle = '#cccccc';
+      wrapText(ctx, s2, W/2, 1189, W-160, 44);
+    }
+
+    // ── ⑦ 10년 후 미래 시나리오 ──────────────────────────
+    ctx.fillStyle = 'rgba(232,255,71,0.08)';
+    roundRect(ctx, 60, 1248, W-120, 200, 14);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,255,71,0.2)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, 60, 1248, W-120, 200, 14);
+    ctx.stroke();
+
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.8)';
+    ctx.textAlign = 'left';
+    ctx.fillText('✨ 10년 후 당신의 모습', 90, 1295);
+    ctx.textAlign = 'center';
+    ctx.font = '400 32px sans-serif';
+    ctx.fillStyle = '#d0d0d0';
+    wrapText(ctx, future, W/2, 1345, W-160, 46);
+
+    // ── ⑧ 지금 당장 액션 ─────────────────────────────────
+    if (action) {
+      ctx.font = 'bold 32px sans-serif';
+      ctx.fillStyle = 'rgba(232,255,71,0.7)';
+      ctx.fillText(action, W/2, 1508);
+    }
+
+    // ── ⑨ 클로징 문구 (응원) ─────────────────────────────
+    if (closing) {
+      ctx.font = '400 30px sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      const shortClosing = closing.length > 50 ? closing.slice(0, 50) + '…' : closing;
+      wrapText(ctx, shortClosing, W/2, 1570, W-160, 42);
+    }
+
+    // ── ⑩ 하단 CTA 박스 ──────────────────────────────────
+    const ctaGrad = ctx.createLinearGradient(0, 1650, 0, 1860);
+    ctaGrad.addColorStop(0, 'rgba(232,255,71,0.18)');
+    ctaGrad.addColorStop(1, 'rgba(232,255,71,0.08)');
+    ctx.fillStyle = ctaGrad;
+    roundRect(ctx, 60, 1650, W-120, 210, 24);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,255,71,0.45)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 60, 1650, W-120, 210, 24);
+    ctx.stroke();
+
+    ctx.font = 'bold 42px sans-serif';
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillText('나의 10년 후가 궁금하다면?', W/2, 1720);
+    ctx.font = '500 34px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('지금 바로 테스트해보세요 🚀', W/2, 1768);
+    ctx.font = '400 28px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.6)';
+    ctx.fillText('10yltest.netlify.app', W/2, 1832);
 
   } else {
-    // ══ 정방형 레이아웃 (1:1) — 카카오톡 ══
+    // ══════════════════════════════════════════════════════
+    // 정방형 레이아웃 (1:1 = 1080×1080) — 카카오톡
+    // ══════════════════════════════════════════════════════
 
-    // 이모지
-    ctx.font = '140px serif';
-    ctx.fillText(typeEmoji, W/2, 280);
-
-    // 유형 레이블
-    ctx.font = '500 36px sans-serif';
-    ctx.fillStyle = 'rgba(232,255,71,0.8)';
-    ctx.fillText('나의 10년 후 미래 유형', W/2, 365);
-
-    // 유형명
-    ctx.font = 'bold 72px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    wrapText(ctx, typeName, W/2, 470, W - 120, 86);
-
-    // 구분선
-    ctx.strokeStyle = 'rgba(232,255,71,0.2)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(100, 580); ctx.lineTo(W-100, 580); ctx.stroke();
-
-    // 한 줄 요약
-    ctx.font = '400 38px sans-serif';
-    ctx.fillStyle = '#cccccc';
-    wrapText(ctx, oneline, W/2, 650, W - 150, 52);
-
-    // 공유 메시지
-    ctx.font = '400 32px sans-serif';
-    ctx.fillStyle = '#888888';
-    wrapText(ctx, shareMsg, W/2, 780, W - 150, 46);
-
-    // 하단 CTA
-    ctx.fillStyle = 'rgba(232,255,71,0.1)';
-    roundRect(ctx, 80, 890, W-160, 130, 20);
+    // ── ① 10년 후 나이 배지 ──────────────────────────────
+    ctx.fillStyle = 'rgba(232,255,71,0.14)';
+    roundRect(ctx, 60, 130, W-120, 100, 14);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(232,255,71,0.3)';
+    ctx.strokeStyle = 'rgba(232,255,71,0.4)';
     ctx.lineWidth = 1.5;
-    roundRect(ctx, 80, 890, W-160, 130, 20);
+    roundRect(ctx, 60, 130, W-120, 100, 14);
     ctx.stroke();
 
-    ctx.font = 'bold 36px sans-serif';
+    ctx.font = 'bold 34px sans-serif';
     ctx.fillStyle = '#e8ff47';
-    ctx.fillText('나도 테스트하기 → 10yltest.netlify.app', W/2, 968);
+    ctx.fillText(`10년 후 나이: ${ageInfo.futureRange}`, W/2, 169);
+    ctx.font = '400 26px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(`현재 ${ageInfo.label} → 10년 후 ${ageInfo.future}`, W/2, 208);
+
+    // ── ② 이모지 ─────────────────────────────────────────
+    ctx.font = '130px serif';
+    ctx.fillText(typeEmoji, W/2, 390);
+
+    // ── ③ 유형 레이블 ────────────────────────────────────
+    ctx.font = '500 32px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.8)';
+    ctx.fillText('나의 10년 후 미래 유형', W/2, 460);
+
+    // ── ④ 유형명 ─────────────────────────────────────────
+    ctx.font = 'bold 68px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    wrapText(ctx, typeName, W/2, 560, W - 100, 80);
+
+    // ── 구분선 ───────────────────────────────────────────
+    const lineGrad2 = ctx.createLinearGradient(80, 0, W-80, 0);
+    lineGrad2.addColorStop(0, 'rgba(232,255,71,0)');
+    lineGrad2.addColorStop(0.5, 'rgba(232,255,71,0.35)');
+    lineGrad2.addColorStop(1, 'rgba(232,255,71,0)');
+    ctx.strokeStyle = lineGrad2;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(80, 660); ctx.lineTo(W-80, 660); ctx.stroke();
+
+    // ── ⑤ 한 줄 요약 (핵심 긍정 문구) ───────────────────
+    ctx.font = 'bold 38px sans-serif';
+    ctx.fillStyle = '#f0f0f0';
+    wrapText(ctx, oneline, W/2, 720, W - 120, 52);
+
+    // ── ⑥ 강점 하이라이트 ────────────────────────────────
+    if (s1) {
+      ctx.font = '400 30px sans-serif';
+      ctx.fillStyle = 'rgba(232,255,71,0.7)';
+      wrapText(ctx, s1, W/2, 830, W-160, 42);
+    }
+
+    // ── ⑦ 10년 후 미래 ───────────────────────────────────
+    if (future) {
+      ctx.fillStyle = 'rgba(232,255,71,0.07)';
+      roundRect(ctx, 60, 890, W-120, 100, 12);
+      ctx.fill();
+      ctx.font = '400 28px sans-serif';
+      ctx.fillStyle = '#aaaaaa';
+      wrapText(ctx, `✨ ${future}`, W/2, 948, W-160, 38);
+    }
+
+    // ── ⑧ 하단 CTA ───────────────────────────────────────
+    const ctaG2 = ctx.createLinearGradient(0, 1000, 0, 1080);
+    ctaG2.addColorStop(0, 'rgba(232,255,71,0.16)');
+    ctaG2.addColorStop(1, 'rgba(232,255,71,0.06)');
+    ctx.fillStyle = ctaG2;
+    roundRect(ctx, 60, 1004, W-120, 60, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,255,71,0.4)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, 60, 1004, W-120, 60, 12);
+    ctx.stroke();
+
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillText('나도 테스트 → 10yltest.netlify.app', W/2, 1044);
   }
 
   return canvas.toDataURL('image/png');
