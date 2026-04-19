@@ -262,15 +262,23 @@ function buildResult() {
   const ui = t().ui;
   const SHARE_BTNS = `
     <div class="share-btns">
-      <button class="share-btn kakao"   onclick="shareKakao()">
+      <button class="share-btn kakao"    onclick="shareKakao()">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.632 5.07 4.09 6.48L5.1 21l5.1-2.52c.59.09 1.19.14 1.8.14 5.523 0 10-3.477 10-7.8C22 6.477 17.523 3 12 3z"/></svg>
         KakaoTalk
       </button>
-      <button class="share-btn twitter" onclick="shareTwitter()">
+      <button class="share-btn twitter"  onclick="shareTwitter()">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
         X
       </button>
-      <button class="share-btn copy"    onclick="copyLink()">
+      <button class="share-btn facebook" onclick="shareFacebook()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </button>
+      <button class="share-btn insta"    onclick="shareInsta()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram
+      </button>
+      <button class="share-btn copy"     onclick="copyLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         Copy
       </button>
@@ -370,19 +378,36 @@ function buildResult() {
     </div>
   </div>
 
-  <!-- 인스타 스토리 모달 -->
-  <div class="modal-overlay" id="modal-insta">
-    <div class="modal-box">
-      <div class="modal-title">${ui.instaTitle}</div>
-      <div class="modal-sub">${ui.instaSub}</div>
-      <img class="modal-canvas" id="insta-preview" src="" alt="preview" />
-      <div class="modal-btns">
-        <button class="modal-btn-dl"    onclick="downloadInstaImage()">${ui.imgSave}</button>
-        <button class="modal-btn-close" onclick="closeInstaModal()">${ui.close}</button>
+  <!-- 인스타 스토리 모달 → 공유 이미지 모달로 업그레이드 -->
+  <div class="modal-overlay" id="modal-share-img">
+    <div class="modal-box share-img-modal">
+      <div class="share-img-header">
+        <div class="modal-title" id="share-img-title">공유 이미지</div>
+        <div class="modal-sub" id="share-img-desc">이미지를 저장한 후 업로드하세요</div>
       </div>
+
+      <!-- 이미지 미리보기 -->
+      <div class="share-img-preview-wrap">
+        <img id="share-img-preview" src="" alt="공유 이미지" />
+      </div>
+
+      <!-- 저장 버튼 -->
+      <button class="btn-share-save" id="btn-share-save" onclick="downloadShareImage()">
+        📥 이미지 저장하기
+      </button>
+
+      <!-- 플랫폼별 안내 -->
+      <div class="share-guide" id="share-guide"></div>
+
+      <!-- 플랫폼 열기 버튼 -->
+      <button class="btn-open-platform" id="btn-open-platform" onclick="openPlatform()">
+      </button>
+
+      <button class="modal-btn-close" onclick="closeShareModal()" style="width:100%;margin-top:8px;">닫기 · Close</button>
     </div>
   </div>
-  <canvas id="insta-canvas" style="display:none;"></canvas>`;
+
+  <canvas id="share-canvas" style="display:none;"></canvas>`;
 }
 
 // ── 퀴즈 렌더링 ───────────────────────────────────────────
@@ -656,30 +681,281 @@ function unlockResult() {
   showToast('🎉 ' + ui.unlockComplete);
 }
 
-// ── 공유 함수들 ───────────────────────────────────────────
-function shareKakao() {
-  const KAKAO_KEY = 'YOUR_KAKAO_JS_KEY';
-  const PAGE_URL  = window.location.href;
-  if (KAKAO_KEY === 'YOUR_KAKAO_JS_KEY') { showToast('Kakao App Key required (app.js)'); return; }
-  if (!window.Kakao) { showToast('Kakao SDK loading...'); return; }
-  if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_KEY);
-  window.Kakao.Share.sendDefault({
-    objectType: 'feed',
-    content: {
-      title: `${_currentType?.emoji} 10YL — ${_currentType?.name}`,
-      description: _currentResult?.one_line || '',
-      imageUrl: 'https://yourdomain.com/og-image.png',
-      link: { mobileWebUrl: PAGE_URL, webUrl: PAGE_URL },
-    },
-    buttons: [{ title: 'Take the test', link: { mobileWebUrl: PAGE_URL, webUrl: PAGE_URL } }],
-  });
+// ── 공유 이미지 생성 핵심 함수 ───────────────────────────
+// ratio: 'story' = 9:16 (1080×1920), 'square' = 1:1 (1080×1080)
+function generateShareImage(ratio) {
+  const typeName  = _currentType?.name   || '';
+  const typeEmoji = _currentType?.emoji  || '🔮';
+  const oneline   = _currentResult?.one_line  || '';
+  const current   = _currentResult?.current   || '';
+  const shareMsg  = _currentResult?.share     || '';
+  const year1     = _currentResult?.year1_3   || '';
+
+  const W = 1080;
+  const H = ratio === 'story' ? 1920 : 1080;
+
+  const canvas = document.getElementById('share-canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // ── 배경 ──
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── 배경 글로우 원 ──
+  const glowY = ratio === 'story' ? 480 : 300;
+  const grad = ctx.createRadialGradient(W/2, glowY, 0, W/2, glowY, 500);
+  grad.addColorStop(0, 'rgba(232,255,71,0.12)');
+  grad.addColorStop(1, 'rgba(232,255,71,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── 상단 브랜드 태그 ──
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillStyle = 'rgba(232,255,71,0.7)';
+  ctx.textAlign = 'center';
+  ctx.fillText('10YL · 10 Years Later', W/2, 90);
+
+  if (ratio === 'story') {
+    // ══ 스토리 레이아웃 (9:16) ══
+
+    // 이모지
+    ctx.font = '200px serif';
+    ctx.fillText(typeEmoji, W/2, 420);
+
+    // 유형 레이블
+    ctx.font = '500 42px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.8)';
+    ctx.fillText('나의 10년 후 미래 유형', W/2, 520);
+
+    // 유형명
+    ctx.font = 'bold 90px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    wrapText(ctx, typeName, W/2, 650, W - 120, 105);
+
+    // 구분선
+    ctx.strokeStyle = 'rgba(232,255,71,0.2)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(100, 780); ctx.lineTo(W-100, 780); ctx.stroke();
+
+    // 한 줄 요약
+    ctx.font = '400 48px sans-serif';
+    ctx.fillStyle = '#cccccc';
+    wrapText(ctx, oneline, W/2, 860, W - 150, 62);
+
+    // 구분선 2
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath(); ctx.moveTo(100, 1040); ctx.lineTo(W-100, 1040); ctx.stroke();
+
+    // 현재 상태 요약 (앞 80자)
+    ctx.font = '400 38px sans-serif';
+    ctx.fillStyle = '#888888';
+    const shortCurrent = current.length > 80 ? current.slice(0, 80) + '…' : current;
+    wrapText(ctx, shortCurrent, W/2, 1110, W - 150, 52);
+
+    // 1~3년 미리보기
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.6)';
+    ctx.fillText('▶ 1~3년 후', 160, 1340);
+    ctx.font = '400 36px sans-serif';
+    ctx.fillStyle = '#999999';
+    const shortYear = year1.length > 60 ? year1.slice(0, 60) + '…' : year1;
+    wrapText(ctx, shortYear, W/2, 1410, W - 150, 48);
+
+    // 하단 CTA 박스
+    ctx.fillStyle = 'rgba(232,255,71,0.1)';
+    roundRect(ctx, 80, 1620, W-160, 200, 24);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,255,71,0.3)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, 80, 1620, W-160, 200, 24);
+    ctx.stroke();
+
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillText('나의 미래도 궁금하다면?', W/2, 1695);
+    ctx.font = '400 36px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('10yltest.netlify.app', W/2, 1755);
+
+    // 최하단 워터마크
+    ctx.font = '400 28px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText('10YL — How will I change in the next 10 years?', W/2, 1870);
+
+  } else {
+    // ══ 정방형 레이아웃 (1:1) — 카카오톡 ══
+
+    // 이모지
+    ctx.font = '140px serif';
+    ctx.fillText(typeEmoji, W/2, 280);
+
+    // 유형 레이블
+    ctx.font = '500 36px sans-serif';
+    ctx.fillStyle = 'rgba(232,255,71,0.8)';
+    ctx.fillText('나의 10년 후 미래 유형', W/2, 365);
+
+    // 유형명
+    ctx.font = 'bold 72px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    wrapText(ctx, typeName, W/2, 470, W - 120, 86);
+
+    // 구분선
+    ctx.strokeStyle = 'rgba(232,255,71,0.2)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(100, 580); ctx.lineTo(W-100, 580); ctx.stroke();
+
+    // 한 줄 요약
+    ctx.font = '400 38px sans-serif';
+    ctx.fillStyle = '#cccccc';
+    wrapText(ctx, oneline, W/2, 650, W - 150, 52);
+
+    // 공유 메시지
+    ctx.font = '400 32px sans-serif';
+    ctx.fillStyle = '#888888';
+    wrapText(ctx, shareMsg, W/2, 780, W - 150, 46);
+
+    // 하단 CTA
+    ctx.fillStyle = 'rgba(232,255,71,0.1)';
+    roundRect(ctx, 80, 890, W-160, 130, 20);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,255,71,0.3)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, 80, 890, W-160, 130, 20);
+    ctx.stroke();
+
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillText('나도 테스트하기 → 10yltest.netlify.app', W/2, 968);
+  }
+
+  return canvas.toDataURL('image/png');
 }
 
+// ── 텍스트 줄바꿈 헬퍼 ───────────────────────────────────
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  if (!text) return y;
+  const chars = text.split('');
+  let line = '';
+  let curY = y;
+  chars.forEach(ch => {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, curY);
+      line = ch;
+      curY += lineHeight;
+    } else {
+      line = test;
+    }
+  });
+  if (line) ctx.fillText(line, x, curY);
+  return curY;
+}
+
+// ── 둥근 사각형 헬퍼 ─────────────────────────────────────
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── 공유 모달 열기 ────────────────────────────────────────
+let _sharePlatform = '';
+let _shareImageData = '';
+
+function openShareModal(platform) {
+  _sharePlatform = platform;
+
+  const ratio = (platform === 'kakao') ? 'square' : 'story';
+  _shareImageData = generateShareImage(ratio);
+
+  document.getElementById('share-img-preview').src = _shareImageData;
+
+  const configs = {
+    kakao: {
+      title:  '📤 카카오톡 공유',
+      desc:   '이미지를 저장한 후, 카카오톡에서 친구에게 사진으로 전송하세요',
+      guide:  '① 아래 [이미지 저장하기] 버튼 클릭\n② 카카오톡 앱 열기\n③ 친구 채팅창에서 + → 사진 → 저장된 이미지 선택',
+      btnTxt: '📱 카카오톡 열기',
+      btnUrl: 'kakaotalk://',
+    },
+    twitter: {
+      title:  '📤 X (트위터) 공유',
+      desc:   '이미지를 저장한 후 X 앱에서 스토리에 업로드하세요',
+      guide:  '① 아래 [이미지 저장하기] 버튼 클릭\n② X 앱 열기\n③ 새 게시물 → 이미지 첨부 → 저장된 이미지 선택',
+      btnTxt: '🐦 X 앱 열기',
+      btnUrl: 'twitter://',
+    },
+    facebook: {
+      title:  '📤 Facebook 공유',
+      desc:   '이미지를 저장한 후 Facebook 스토리에 업로드하세요',
+      guide:  '① 아래 [이미지 저장하기] 버튼 클릭\n② Facebook 앱 열기\n③ 스토리 만들기 → 저장된 이미지 선택',
+      btnTxt: '📘 Facebook 열기',
+      btnUrl: 'fb://',
+    },
+    insta: {
+      title:  '📤 Instagram 스토리 공유',
+      desc:   '이미지를 저장한 후 인스타그램 스토리에 업로드하세요',
+      guide:  '① 아래 [이미지 저장하기] 버튼 클릭\n② Instagram 앱 열기\n③ 스토리 → + → 저장된 이미지 선택',
+      btnTxt: '📸 Instagram 열기',
+      btnUrl: 'instagram://',
+    },
+  };
+
+  const cfg = configs[platform] || configs.insta;
+  document.getElementById('share-img-title').textContent = cfg.title;
+  document.getElementById('share-img-desc').textContent  = cfg.desc;
+  document.getElementById('share-guide').textContent     = cfg.guide;
+  document.getElementById('btn-open-platform').textContent = cfg.btnTxt;
+  document.getElementById('btn-open-platform').dataset.url = cfg.btnUrl;
+
+  document.getElementById('modal-share-img').classList.add('show');
+}
+
+function openPlatform() {
+  const url = document.getElementById('btn-open-platform').dataset.url;
+  window.location.href = url;
+  setTimeout(() => showToast('앱이 설치된 경우 열립니다'), 800);
+}
+
+function downloadShareImage() {
+  const a = document.createElement('a');
+  a.download = `10YL_${_sharePlatform}_result.png`;
+  a.href = _shareImageData;
+  a.click();
+  showToast('✅ 이미지가 저장됐어요! 앱에서 업로드하세요 📲');
+}
+
+function closeShareModal() {
+  document.getElementById('modal-share-img').classList.remove('show');
+}
+
+// ── 카카오톡 공유 ─────────────────────────────────────────
+function shareKakao() {
+  openShareModal('kakao');
+}
+
+// ── X (트위터) 공유 ───────────────────────────────────────
 function shareTwitter() {
-  const text = encodeURIComponent(
-    `${_currentType?.emoji} 10YL — "${_currentType?.name}"\n${_currentResult?.share||''}\n\n`
-  );
-  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+  openShareModal('twitter');
+}
+
+// ── 페이스북 공유 ─────────────────────────────────────────
+function shareFacebook() {
+  openShareModal('facebook');
+}
+
+// ── 인스타그램 공유 ───────────────────────────────────────
+function shareInsta() {
+  openShareModal('insta');
 }
 
 function copyLink() {
@@ -690,61 +966,9 @@ function copyLink() {
     .catch(()  => showToast('Copy failed'));
 }
 
-// ── 인스타 스토리 ──────────────────────────────────────────
-function shareInsta() {
-  const typeName  = _currentType?.name  || '';
-  const typeEmoji = _currentType?.emoji || '🔮';
-  const oneline   = _currentResult?.one_line || '';
-
-  const canvas = document.getElementById('insta-canvas');
-  const W = 1080, H = 1920;
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0,0,W,H);
-  ctx.beginPath(); ctx.arc(W/2,520,320,0,Math.PI*2);
-  ctx.fillStyle = 'rgba(232,255,71,0.06)'; ctx.fill();
-
-  ctx.font='180px serif'; ctx.textAlign='center';
-  ctx.fillText(typeEmoji, W/2, 620);
-  ctx.font='bold 44px sans-serif'; ctx.fillStyle='#e8ff47';
-  ctx.fillText('10YL', W/2, 780);
-  ctx.font='bold 80px sans-serif'; ctx.fillStyle='#f0f0f0';
-  ctx.fillText(typeName, W/2, 900);
-
-  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(160,970); ctx.lineTo(W-160,970); ctx.stroke();
-
-  ctx.font='400 44px sans-serif'; ctx.fillStyle='#888888';
-  const maxW=W-200; let line='', y=1060;
-  oneline.split('').forEach(ch => {
-    const test = line + ch;
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line,W/2,y); line=ch; y+=66;
-    } else line=test;
-  });
-  if (line) ctx.fillText(line,W/2,y);
-
-  ctx.font='500 32px sans-serif'; ctx.fillStyle='rgba(232,255,71,0.5)';
-  ctx.fillText('10YL — How will I change in 10 years?', W/2, H-160);
-
-  document.getElementById('insta-preview').src = canvas.toDataURL('image/png');
-  document.getElementById('modal-insta').classList.add('show');
-}
-
-function downloadInstaImage() {
-  const ui = t().ui;
-  const a  = document.createElement('a');
-  a.download = '10YL_Story.png';
-  a.href     = document.getElementById('insta-canvas').toDataURL('image/png');
-  a.click();
-  showToast(ui.toastImg);
-  closeInstaModal();
-}
-
-function closeInstaModal() {
-  document.getElementById('modal-insta').classList.remove('show');
-}
+// ── 하위 호환용 (기존 코드 참조 방지) ────────────────────
+function downloadInstaImage() { downloadShareImage(); }
+function closeInstaModal()    { closeShareModal(); }
 
 // ── 토스트 ────────────────────────────────────────────────
 function showToast(msg) {
