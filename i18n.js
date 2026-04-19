@@ -238,7 +238,7 @@ const I18N = {
       { q:'Do you plan to marry in the next 10 years?', opts:['No plans','If opportunity arises','Planning within 3 years','Already preparing','Already married'] },
       { q:'Are your parents still alive?', opts:['Both alive','One parent alive','Both passed away','No contact with parents'] },
       { q:"How is your parents' financial situation?", opts:['Very difficult','Somewhat difficult','Average','Stable','Very comfortable'] },
-      { q:'What are your plans for supporting your parents?', opts:['I will fully support them','Share with siblings','They can support themselves','Haven't thought about it','They support me'] },
+      { q:'What are your plans for supporting your parents?', opts:['I will fully support them','Share with siblings','They can support themselves',"Haven't thought about it",'They support me'] },
       { q:'Do you actively network or build connections?', opts:['Not at all','Occasionally attend events','Regular community involvement','Actively networking','Running my own community'] },
       { q:'How often do you exercise per week?', opts:['Rarely','Once a week','2–3 times a week','4–5 times a week','Every day'] },
       { q:'What type of exercise do you mainly do?', opts:["Don't exercise",'Walking / light strolling','Gym / weight training','Running / cycling / cardio','Team sports / martial arts / swimming'] },
