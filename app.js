@@ -135,10 +135,10 @@ function detectType(scores) {
 // ── 광고 설정 ─────────────────────────────────────────────
 const AD_CONFIG = {
   kakao: {
-    unitId_top:    'YOUR_ADFIT_UNIT_ID_TOP',
-    unitId_bottom: 'YOUR_ADFIT_UNIT_ID_BOTTOM',
-    unitId_mid:    'YOUR_ADFIT_UNIT_ID_MID',
-    unitId_result: 'YOUR_ADFIT_UNIT_ID_RESULT',
+    unitId_top:    'DAN-dIpvXD89rtv58vDe',
+    unitId_bottom: 'DAN-UYorlfW7Ou8EcvKw',
+    unitId_mid:    'DAN-qpCC5PtwOYM0L7MY',
+    unitId_result: 'DAN-2CLeWJW0SFaYkj6I',
     width: 320, height_sm: 50, height_lg: 100,
   },
   google: {
